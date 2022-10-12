@@ -1,0 +1,18 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "flutter",
+			"command": "flutter",
+			"args": [
+				"build",
+				"web",
+				"--release"
+			],
+			"group": "build",
+			"problemMatcher": [],
+			"label": "flutter: flutter build web",
+			"detail": "project/galaxeus_web"
+		}
+	]
+}

@@ -1,0 +1,40 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "galaxeus_app",
+            "cwd": "galaxeus_app",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "galaxeus_app (profile mode)",
+            "cwd": "galaxeus_app",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "galaxeus_app (release mode)",
+            "cwd": "galaxeus_app",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        },
+        {
+            "name": "galaxeus_bot",
+            "cwd": "galaxeus_bot",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "galaxeus_userbot",
+            "cwd": "galaxeus_userbot",
+            "request": "launch",
+            "type": "dart"
+        }
+    ]
+}

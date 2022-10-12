@@ -1,0 +1,18 @@
+name: galaxeus_core_apis
+description: A scheme galaxeus app api.
+version: 0.0.3
+homepage: https://youtube.com/c/galaxeus
+publish_to: none
+
+environment:
+  sdk: '>=2.18.0 <3.0.0'
+
+# dependencies:
+#   path: ^1.8.0
+
+dev_dependencies:
+  lints: ^2.0.0
+  test: ^1.16.0
+dependencies: 
+  galaxeus_lib:
+    path: ../galaxeus_lib/
