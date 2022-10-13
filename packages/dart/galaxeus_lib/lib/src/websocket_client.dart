@@ -10,11 +10,8 @@ class WebSocketClient {
   late bool isConnect = false;
   late EventEmitter event_emitter = EventEmitter();
   late List clients = [];
-  WebSocketClient(this.url,
-      {this.protocols,
-      this.headers,
-      this.pingInterval,
-      EventEmitter? eventEmitter}) {
+  late WebSocket socket;
+  WebSocketClient(this.url, {this.protocols, this.headers, this.pingInterval, EventEmitter? eventEmitter}) {
     if (eventEmitter != null) {
       event_emitter = eventEmitter;
     }
@@ -26,7 +23,6 @@ class WebSocketClient {
   }
 
   Future<void> connect() async {
-    late WebSocket socket;
     while (true) {
       await Future.delayed(Duration(milliseconds: 500));
       if (isConnect == false) {
@@ -58,13 +54,18 @@ class WebSocketClient {
             },
             onDone: () async {
               isConnect = false;
-              await socket.done;
-              await socket.close();
+              Timer.periodic(pingInterval ?? Duration(seconds: 2), (timer) async {
+                try {
+                  await connect();
+                } catch (e) {}
+                if (isConnect) {
+                  timer.cancel();
+                }
+              });
               event_emitter.emit("update", null, {
                 "@type": "connection",
                 "status": "disconnect",
               });
-              await connect();
             },
             cancelOnError: true,
           );
@@ -100,12 +101,12 @@ class WebSocketClient {
     });
   }
 
-  // void clientSend(String name, [data]) {
-  //   return socket.add(data);
-  // }
+  void clientSend(String name, [data]) {
+    return socket.add(data);
+  }
 
-  // void clientSendJson(String name, [Map? data]) {
-  //   data ??= {};
-  //   return socket.add(json.encode(data));
-  // }
+  void clientSendJson(String name, [Map? data]) {
+    data ??= {};
+    return socket.add(json.encode(data));
+  }
 }
