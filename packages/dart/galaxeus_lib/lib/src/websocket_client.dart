@@ -8,13 +8,24 @@ class WebSocketClient {
   late Map<String, dynamic>? headers;
   late Duration? pingInterval;
   late bool isConnect = false;
-  late EventEmitter event_emitter = EventEmitter();
+  late EventEmitter event_emitter;
   late List clients = [];
   late WebSocket socket;
-  WebSocketClient(this.url, {this.protocols, this.headers, this.pingInterval, EventEmitter? eventEmitter}) {
-    if (eventEmitter != null) {
-      event_emitter = eventEmitter;
-    }
+  late String event_name_update;
+  late String event_name_connection;
+  WebSocketClient(
+    this.url, {
+    this.protocols,
+    this.headers,
+    this.pingInterval,
+    EventEmitter? eventEmitter,
+    String eventNameUpdate = "update",
+    String eventNameConnection = "connection",
+  }) {
+    eventEmitter ??= EventEmitter();
+    event_emitter = eventEmitter;
+    event_name_update = eventNameUpdate;
+    event_name_connection = eventNameConnection;
   }
 
   String createClientId() {
@@ -39,7 +50,7 @@ class WebSocketClient {
               if (event is String && event.isNotEmpty) {
                 try {
                   return event_emitter.emit(
-                    "update",
+                    event_name_update,
                     null,
                     event,
                   );
@@ -62,7 +73,7 @@ class WebSocketClient {
                   timer.cancel();
                 }
               });
-              event_emitter.emit("connection", null, {
+              event_emitter.emit(event_name_connection, null, {
                 "@type": "connection",
                 "status": "disconnect",
               });
@@ -79,7 +90,7 @@ class WebSocketClient {
           try {
             await socket.done;
             await socket.close();
-            event_emitter.emit("update", null, {
+            event_emitter.emit(event_name_connection, null, {
               "@type": "connection",
               "status": "disconnect",
             });
