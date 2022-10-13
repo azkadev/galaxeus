@@ -62,7 +62,7 @@ class WebSocketClient {
                   timer.cancel();
                 }
               });
-              event_emitter.emit("update", null, {
+              event_emitter.emit("connection", null, {
                 "@type": "connection",
                 "status": "disconnect",
               });
@@ -92,21 +92,26 @@ class WebSocketClient {
     }
   }
 
-  Listener on(String name, Function(dynamic update) callback) {
+  Listener on(String name, Function(dynamic update) callback, {bool isThrowError = false}) {
     return event_emitter.on(name, null, (ev, context) {
-      if (ev.eventData != null) {
-        callback(ev.eventData);
-        return;
+      try {
+        if (ev.eventData != null) {
+          callback.call(ev.eventData);
+          return;
+        }
+      } catch (e) {
+        if (isThrowError == false) {
+          rethrow;
+        }
       }
     });
   }
 
-  void clientSend(String name, [data]) {
-    return socket.add(data);
+  void clientSend(value) {
+    return socket.add(value);
   }
 
-  void clientSendJson(String name, [Map? data]) {
-    data ??= {};
-    return socket.add(json.encode(data));
+  void clientSendJson(Map value) {
+    return socket.add(json.encode(value));
   }
 }
