@@ -12,14 +12,25 @@ class TcpClient {
   late Duration? timeout;
   late bool isConnect = false;
   late Map connect_data = {};
-  TcpClient(
-      {required this.host,
-      required this.port,
-      this.sourceAddress,
-      this.sourcePort = 0,
-      this.timeout,
-      Map? connectData,
-      EventEmitter? eventEmitter}) {
+  late Duration ping_interval;
+  late String event_socket_invoke;
+  late String event_socket_connection;
+  late String event_socket_update;
+  TcpClient({
+    required this.host,
+    required this.port,
+    this.sourceAddress,
+    this.sourcePort = 0,
+    this.timeout,
+    Map? connectData,
+    EventEmitter? eventEmitter,
+    Duration? pingInterval,
+    this.event_socket_invoke = "socket_invoke",
+    this.event_socket_connection = "socket_connection",
+    this.event_socket_update = "socket_update",
+  }) {
+    pingInterval ??= Duration(seconds: 1);
+    ping_interval = pingInterval;
     if (connectData != null) {
       connect_data.addAll(connect_data);
     }
@@ -27,101 +38,75 @@ class TcpClient {
       emitter = eventEmitter;
     }
   }
-  Listener on(
-    String typeUpdate,
-    Function(SocketData update) callback,
-  ) {
-    return emitter.on(typeUpdate, null, (ev, context) {
-      if (ev.eventData is List<int>) {
-        SocketData updateSocket =
-            SocketData((ev.eventData as List<int>), type: "");
-        callback(updateSocket);
+  Listener on(String typeUpdate, dynamic Function(dynamic update) callback, Object? context) {
+    return emitter.on(typeUpdate, context, (ev, context) {
+      if (ev.eventData != null) {
+        callback.call(ev.eventData);
         return;
       }
     });
   }
 
   Future<void> connect({
-    required Function(Socket socket, EventEmitter emitter) onConnect,
+    required dynamic Function(Map data) onConnection,
     required Function(Object error, EventEmitter emitter) onError,
-    required Function(EventEmitter emitter) onDone,
   }) async {
-    late Socket socket;
-    Listener listener = emitter.on("client_send", null, (ev, context) {
-      if (ev.eventData is List<int>) {
-        socket.add((ev.eventData as List<int>));
-        return;
-      }
-    });
     while (true) {
       await Future.delayed(Duration(milliseconds: 500));
       if (isConnect == false) {
         try {
-          socket = await Socket.connect(host, port);
+          socket = await Socket.connect(
+            host,
+            port,
+            sourceAddress: sourceAddress,
+            sourcePort: sourcePort,
+            timeout: timeout,
+          );
           StreamSubscription<Uint8List> listen = socket.listen(
             (List<int> event) {
-              return emitter.emit("update", null, event);
+              return emitter.emit(event_socket_update, null, event);
             },
             onError: (a, b) {
               isConnect = false;
             },
             onDone: () async {
-              onDone(emitter);
+              onConnection.call({"@type": "connection", "status": "disconnect"});
               isConnect = false;
-              emitter.off(listener);
-              await socket.done;
-              await socket.close();
-              await connect(
-                onConnect: onConnect,
-                onError: onError,
-                onDone: onDone,
-              );
+              // await socket.done;
+              // await socket.close();
+              // await connect(
+              //   onConnect: onConnect,
+              //   onError: onError,
+              //   onDone: onDone,
+              // );
+              Timer.periodic(ping_interval, (timer) async {
+                onConnection.call({
+                  "@type": "connection",
+                  "status": "reconnect",
+                });
+                try {
+                  await connect(
+                    onConnection: onConnection,
+                    onError: onError,
+                  );
+                } catch (e) {}
+                if (isConnect) {
+                  timer.cancel();
+                }
+              });
             },
             cancelOnError: true,
           );
           isConnect = true;
-          onConnect(socket, emitter);
+          onConnection.call({"@type": "connection", "status": "connected"});
           break;
         } catch (e) {
           if (e is SocketException) {
             isConnect = false;
           }
-          onError(e, emitter);
+          onError.call(e, emitter);
         }
       }
     }
-  }
-
-  void emit(
-    String typeUpdate,
-    List<int> data, {
-    String event = "client_send",
-  }) {
-    return emitter.emit(event, null, data);
-  }
-}
-
-class SocketData {
-  late List<int> raw;
-  late String type;
-  SocketData(
-    this.raw, {
-    required this.type,
-  });
-
-  String get text {
-    late String text = "";
-    try {
-      text = utf8.decode(raw);
-    } catch (e) {}
-    return text;
-  }
-
-  Map get toJson {
-    late Map jsonData = {};
-    try {
-      jsonData = json.decode(utf8.decode(raw));
-    } catch (e) {}
-    return jsonData;
   }
 }

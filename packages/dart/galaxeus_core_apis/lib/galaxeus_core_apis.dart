@@ -1,8 +1,7 @@
 library galaxeus_core_apis;
 
 import 'dart:convert';
-
-import 'package:galaxeus_lib/galaxeus_lib.dart';
+ 
 
 part 'src/information/information.dart';
 

@@ -5,11 +5,9 @@ part of galaxeus_core_apis;
 class AppApiDataValidation {
   final AppApiRequestData appApiRequestData;
   late Map data;
-  late Map header;
   late AppApiProtocolType protocol;
   AppApiDataValidation({required this.appApiRequestData}) {
     data = appApiRequestData.data;
-    header = appApiRequestData.header;
     protocol = appApiRequestData.protocol;
   }
 
@@ -430,6 +428,7 @@ class DataValidation {
     jsonData["id"] = data["id"];
     return {"@type": "ok", "data": jsonData};
   }
+
   static Map getPayoutWallet(Map data) {
     late Map jsonData = {};
 
@@ -503,7 +502,7 @@ class DataValidation {
     } else {
       if (data.containsKey("external_id")) {
         if (data["external_id"] is String == false) {
-          data["external_id"] = getUuid(20);
+          data["external_id"] = "getUuid(20)";
         }
         String external_id = data["external_id"] as String;
         jsonData["external_id"] = external_id;

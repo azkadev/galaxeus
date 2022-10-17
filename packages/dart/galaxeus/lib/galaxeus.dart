@@ -25,7 +25,7 @@ class Galaxeus {
     galaxeus_client = galaxeusClient;
   }
 
-  on(
+  Listener on(
     String event,
     context,
     Function(dynamic data) callback,
@@ -37,8 +37,30 @@ class Galaxeus {
     });
   }
 
-  initIsolate({GalaxeusClient? galaxeusClient}) async {
+  Future<void> initIsolate({
+    GalaxeusClient? galaxeusClient,
+  }) async {
     galaxeusClient ??= galaxeus_client;
+    if (galaxeusClient.galaxeusServer.protocolType == GalaxeusProtocolType.websocket) {
+      await galaxeusClient.webSocketClient.connect(
+        onDataUpdate: (data) {
+          if (data is String && data.isNotEmpty) {
+            try {
+              Map update = json.decode(data);
+              if (update.containsKey("@extra")) {
+                return event_mitter.emit(galaxeusClient!.webSocketClient.event_name_invoke, null, update);
+              } else {
+                return event_mitter.emit(galaxeusClient!.webSocketClient.event_name_update, null, update);
+              }
+            } catch (e) {}
+          }
+        },
+        onDataConnection: (data) {
+          print(data);
+        },
+      );
+    }
+    return;
   }
 
   Future<AppApiResponse> request({
@@ -47,21 +69,21 @@ class Galaxeus {
     String? extra,
     GalaxeusClient? galaxeusClient,
     bool isThrowError = false,
+    bool isVoid = false,
   }) async {
     parameters ??= {};
     galaxeusClient ??= galaxeus_client;
     if (method != null) {
       parameters["@type"] = method;
     }
-    if (parameters["@type"] is String == false ||
-        (parameters["@type"] is String &&
-            (parameters["@type"] as String).isEmpty)) {
-      return AppApiResponse(
-          data: {"@type": "error", "message": "@type_must_be_add"});
+    if (parameters["@type"] is String == false || (parameters["@type"] is String && (parameters["@type"] as String).isEmpty)) {
+      return AppApiResponse(data: {
+        "@type": "error",
+        "message": "@type_must_be_add",
+      });
     }
 
-    if (galaxeusClient.galaxeusServer.protocolType ==
-        GalaxeusProtocolType.http) {
+    if (galaxeusClient.galaxeusServer.protocolType == GalaxeusProtocolType.http) {
       if (galaxeusClient.token.isEmpty) {
         return AppApiResponse(
           data: {
@@ -91,11 +113,45 @@ class Galaxeus {
       return AppApiResponse(data: response.jsonData ?? {});
     }
 
-    if (galaxeusClient.galaxeusServer.protocolType ==
-        GalaxeusProtocolType.tcp) {}
+    if (galaxeusClient.galaxeusServer.protocolType == GalaxeusProtocolType.tcp) {}
 
-    if (galaxeusClient.galaxeusServer.protocolType ==
-        GalaxeusProtocolType.websocket) {}
+    if (galaxeusClient.galaxeusServer.protocolType == GalaxeusProtocolType.websocket) {
+      if (isVoid) {
+        galaxeusClient.webSocketClient.clientSendJson(parameters);
+        return AppApiResponse(data: {"@type": "ok"});
+      }
+      late String extra = getUuid(15);
+      if (parameters["@extra"] is String == false) {
+        parameters["@extra"] = extra;
+      } else {
+        if ((parameters["@extra"] as String).isEmpty) {
+          parameters["@extra"] = extra;
+        }
+        extra = parameters["@extra"];
+      }
+      DateTime dateTime = DateTime.now().add(galaxeusClient.invoke_time_out);
+      late Map json_result = {};
+      Listener listener = on(galaxeusClient.webSocketClient.event_name_invoke, null, (update) {
+        if (update is Map) {
+          if (update["@extra"] == extra) {
+            json_result = update;
+          }
+        }
+      });
+      galaxeusClient.webSocketClient.clientSendJson(parameters);
+      while (true) {
+        await Future.delayed(Duration(milliseconds: 1));
+        if (json_result.isNotEmpty) {
+          event_mitter.off(listener);
+          return AppApiResponse(data: json_result);
+        } else {
+          if (dateTime.isBefore(DateTime.now())) {
+            event_mitter.off(listener);
+            return AppApiResponse(data: {"@type": "error", "@extra": extra, "error_key": "request_api_time_out"});
+          }
+        }
+      }
+    }
 
     return AppApiResponse(data: {
       "@type": "error",
@@ -133,36 +189,91 @@ class GalaxeusClient {
   late ProductionType productionType;
   late GalaxeusServer galaxeusServer;
   late String token;
-  GalaxeusClient({
-    this.token = "",
-    required this.productionType,
-    required this.galaxeusServer,
-  });
+  late WebSocketClient webSocketClient;
+  late Duration invoke_time_out;
+  GalaxeusClient({this.token = "", required this.productionType, required this.galaxeusServer, required this.webSocketClient, Duration? invokeTimeOut}) {
+    invokeTimeOut ??= Duration(seconds: 10);
+    invoke_time_out = invokeTimeOut;
+  }
 
   factory GalaxeusClient.http({
     required String token,
     ProductionType productionType = ProductionType.live,
+    Iterable<String>? protocols,
+    Map<String, dynamic>? headers,
+    Duration? pingInterval,
+    EventEmitter? eventEmitter,
+    String eventNameUpdate = "update",
+    String eventNameConnection = "connection",
   }) {
+    GalaxeusServer galaxeusServer = GalaxeusServer.http(productionType: productionType);
     return GalaxeusClient(
       token: token,
       productionType: productionType,
-      galaxeusServer: GalaxeusServer.http(productionType: productionType),
+      galaxeusServer: galaxeusServer,
+      webSocketClient: WebSocketClient(
+        galaxeusServer.url_host,
+        protocols: protocols,
+        headers: headers,
+        pingInterval: pingInterval,
+        eventEmitter: eventEmitter,
+        eventNameUpdate: eventNameUpdate,
+        eventNameConnection: eventNameConnection,
+      ),
     );
   }
 
   factory GalaxeusClient.tcp({
     ProductionType productionType = ProductionType.live,
+    Iterable<String>? protocols,
+    Map<String, dynamic>? headers,
+    Duration? pingInterval,
+    EventEmitter? eventEmitter,
+    String eventNameUpdate = "update",
+    String eventNameConnection = "connection",
   }) {
     return GalaxeusClient(
-        productionType: productionType, galaxeusServer: GalaxeusServer.tcp());
+      productionType: productionType,
+      galaxeusServer: GalaxeusServer.tcp(productionType: productionType),
+      webSocketClient: WebSocketClient(
+        GalaxeusServer.tcp().url_host,
+        protocols: protocols,
+        headers: headers,
+        pingInterval: pingInterval,
+        eventEmitter: eventEmitter,
+        eventNameUpdate: eventNameUpdate,
+        eventNameConnection: eventNameConnection,
+      ),
+    );
   }
 
   factory GalaxeusClient.websocket({
+    Duration? invokeTimeOut,
     ProductionType productionType = ProductionType.live,
+    Iterable<String>? protocols,
+    Map<String, dynamic>? headers,
+    Duration? pingInterval,
+    EventEmitter? eventEmitter,
+    String eventNameUpdate = "update",
+    String eventNameConnection = "connection",
   }) {
+    GalaxeusServer galaxeusServer = GalaxeusServer.websocket(
+      productionType: productionType,
+    );
     return GalaxeusClient(
-        productionType: productionType,
-        galaxeusServer: GalaxeusServer.websocket());
+      productionType: productionType,
+      galaxeusServer: galaxeusServer,
+      invokeTimeOut: invokeTimeOut,
+      webSocketClient: WebSocketClient(
+        galaxeusServer.url_host,
+        protocols: protocols,
+        headers: headers,
+        pingInterval: pingInterval,
+        eventEmitter: eventEmitter,
+        eventNameUpdate: eventNameUpdate,
+        eventNameConnection: eventNameConnection,
+      ),
+    );
   }
 }
 
@@ -200,9 +311,9 @@ class GalaxeusServer {
   factory GalaxeusServer.websocket({
     ProductionType productionType = ProductionType.live,
   }) {
-    late String url = "https://galaxeus-api.up.railway.app";
+    late String url = "wss://galaxeus-api.up.railway.app/app";
     if (productionType == ProductionType.dev) {
-      url = "http://127.0.0.1:8080";
+      url = "ws://0.0.0.0:8080/app";
     }
     return GalaxeusServer(
       url_host: url,

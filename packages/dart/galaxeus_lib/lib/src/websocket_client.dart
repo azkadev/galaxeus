@@ -13,6 +13,7 @@ class WebSocketClient {
   late WebSocket socket;
   late String event_name_update;
   late String event_name_connection;
+  late String event_name_invoke;
   WebSocketClient(
     this.url, {
     this.protocols,
@@ -21,11 +22,13 @@ class WebSocketClient {
     EventEmitter? eventEmitter,
     String eventNameUpdate = "update",
     String eventNameConnection = "connection",
+    String eventNameInvoke = "invoke",
   }) {
     eventEmitter ??= EventEmitter();
     event_emitter = eventEmitter;
     event_name_update = eventNameUpdate;
     event_name_connection = eventNameConnection;
+    event_name_invoke = eventNameInvoke;
   }
 
   String createClientId() {
@@ -33,7 +36,10 @@ class WebSocketClient {
     return randomString;
   }
 
-  Future<void> connect() async {
+  Future<void> connect({
+    void Function(dynamic data)? onDataUpdate,
+    void Function(Map data)? onDataConnection,
+  }) async {
     while (true) {
       await Future.delayed(Duration(milliseconds: 500));
       if (isConnect == false) {
@@ -46,57 +52,94 @@ class WebSocketClient {
           socket.pingInterval = pingInterval;
           StreamSubscription scoketListen = socket.listen(
             (event) {
-              print(event);
-              if (event is String && event.isNotEmpty) {
-                try {
-                  return event_emitter.emit(
-                    event_name_update,
-                    null,
-                    event,
-                  );
-                } catch (e) {
-                  return;
+              if (onDataUpdate != null) {
+                return onDataUpdate.call(event);
+              } else {
+                if (event is String && event.isNotEmpty) {
+                  try {
+                    return event_emitter.emit(
+                      event_name_update,
+                      null,
+                      event,
+                    );
+                  } catch (e) {
+                    return;
+                  }
                 }
               }
             },
             onError: (a, b) {
               isConnect = false;
-              print("error");
             },
             onDone: () async {
               isConnect = false;
+              if (onDataConnection != null) {
+                onDataConnection.call({
+                  "@type": "connection",
+                  "status": "disconnect",
+                });
+              } else {
+                event_emitter.emit(event_name_connection, null, {
+                  "@type": "connection",
+                  "status": "disconnect",
+                });
+              }
               Timer.periodic(pingInterval ?? Duration(seconds: 2), (timer) async {
                 try {
-                  await connect();
+                  await connect(onDataUpdate: onDataUpdate, onDataConnection: onDataConnection);
                 } catch (e) {}
                 if (isConnect) {
                   timer.cancel();
                 }
               });
-              event_emitter.emit(event_name_connection, null, {
-                "@type": "connection",
-                "status": "disconnect",
-              });
             },
             cancelOnError: true,
           );
           isConnect = true;
+
+          if (onDataConnection != null) {
+            onDataConnection.call({
+              "@type": "connection",
+              "status": "connected",
+            });
+          } else {
+            event_emitter.emit(event_name_connection, null, {
+              "@type": "connection",
+              "status": "connected",
+            });
+          }
           return;
         } catch (e) {
-          print(e);
           if (e is SocketException) {
             isConnect = false;
           }
           try {
             await socket.done;
             await socket.close();
-            event_emitter.emit(event_name_connection, null, {
-              "@type": "connection",
-              "status": "disconnect",
-            });
-            await connect();
+            if (onDataConnection != null) {
+              onDataConnection.call({
+                "@type": "connection",
+                "status": "reconnection",
+              });
+            } else {
+              event_emitter.emit(event_name_connection, null, {
+                "@type": "connection",
+                "status": "reconnection",
+              });
+            }
+            await connect(onDataUpdate: onDataUpdate, onDataConnection: onDataConnection);
           } catch (e) {
-            print(e);
+            if (onDataConnection != null) {
+              onDataConnection.call({
+                "@type": "connection",
+                "status": "reconnection",
+              });
+            } else {
+              event_emitter.emit(event_name_connection, null, {
+                "@type": "connection",
+                "status": "reconnection",
+              });
+            }
           }
         }
       }

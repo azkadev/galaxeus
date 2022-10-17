@@ -126,14 +126,14 @@ packages:
       path: "../galaxeus_core_apis"
       relative: true
     source: path
-    version: "0.0.3"
+    version: "0.0.5"
   galaxeus_lib:
     dependency: "direct main"
     description:
       path: "../galaxeus_lib"
       relative: true
     source: path
-    version: "0.0.10"
+    version: "0.0.17"
   glob:
     dependency: transitive
     description:
