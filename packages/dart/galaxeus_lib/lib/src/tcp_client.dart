@@ -2,7 +2,7 @@
 
 part of galaxeus_lib;
 
-class TcpClient {
+class TcpSocketClient {
   late EventEmitter emitter = EventEmitter();
   late Socket socket;
   late dynamic host;
@@ -16,7 +16,7 @@ class TcpClient {
   late String event_socket_invoke;
   late String event_socket_connection;
   late String event_socket_update;
-  TcpClient({
+  TcpSocketClient({
     required this.host,
     required this.port,
     this.sourceAddress,
@@ -108,5 +108,29 @@ class TcpClient {
         }
       }
     }
+  }
+
+  void send(List<int> data) {
+    return socket.send(data);
+  }
+
+  void sendString(
+    String data, {
+    bool is_compress = false,
+  }) {
+    if (is_compress) {
+      return send(gzip.encode(utf8.encode(data)));
+    }
+    return send(utf8.encode(data));
+  }
+
+  void sendJson(
+    Map data, {
+    bool is_compress = false,
+  }) {
+    if (is_compress) {
+      return send(gzip.encode(utf8.encode(json.encode(data))));
+    }
+    return send(utf8.encode(json.encode(data)));
   }
 }

@@ -6,6 +6,7 @@ class AppApiDataValidation {
   final AppApiRequestData appApiRequestData;
   late Map data;
   late AppApiProtocolType protocol;
+
   AppApiDataValidation({required this.appApiRequestData}) {
     data = appApiRequestData.data;
     protocol = appApiRequestData.protocol;

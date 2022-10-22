@@ -161,11 +161,18 @@ class WebSocketClient {
     });
   }
 
-  void clientSend(value) {
+  void clientSend(Object value, {
+    bool is_compress = false,
+  }) {
+    if (is_compress) {
+      if (value is String) {
+        value = gzip.encode(utf8.encode(value));
+      }
+    }
     return socket.add(value);
   }
 
   void clientSendJson(Map value) {
-    return socket.add(json.encode(value));
+    return clientSend(json.encode(value));
   }
 }

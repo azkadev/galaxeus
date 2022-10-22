@@ -2,12 +2,14 @@
 
 part of galaxeus_lib;
 
-class TcpServer {
-  late dynamic host = "0.0.0.0";
-  late int port = 8080;
+class TcpSocketServer { 
   late List<SocketClientData> sockets = [];
   EventEmitter emitter = EventEmitter();
-  TcpServer(this.host, this.port);
+  late String event_update;
+  TcpSocketServer({
+    this.event_update = "tcp_socket_update"
+
+  });
   Listener on(String typeUpdate,
       Function(Object data, SocketClientData socket) callback) {
     return emitter.on(typeUpdate, null, (ev, context) {
@@ -20,6 +22,8 @@ class TcpServer {
   }
 
   Future<void> listen({
+    required String host,
+    required int port,
     required Function(SocketClientData socket, EventEmitter emitter) onConnect,
     required Function(SocketClientData socket, EventEmitter emitter) onDone,
   }) async {
@@ -47,7 +51,7 @@ class TcpServer {
         socket.listen(
           (List<int> event) async {
             if (event.isNotEmpty) {
-              emitter.emit("update", null, [event, socketClient]);
+              emitter.emit(event_update, null, [event, socketClient]);
             }
           },
           onDone: () async {
