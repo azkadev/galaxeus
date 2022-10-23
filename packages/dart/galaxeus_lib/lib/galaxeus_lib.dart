@@ -9,6 +9,7 @@ import 'package:universal_io/io.dart';
 export 'package:http/http.dart';
 import 'package:collection/collection.dart';
 
+import "package:tcp_client_dart/tcp_client_dart.dart";
 part 'extension/list.dart';
 part 'extension/map.dart';
 part 'extension/string.dart';

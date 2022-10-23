@@ -49,7 +49,7 @@ class TcpSocketClient {
 
   Future<void> connect({
     required dynamic Function(Map data) onConnection,
-    required Function(Object error, EventEmitter emitter) onError,
+    required Function(Map data, EventEmitter emitter) onError,
   }) async {
     while (true) {
       await Future.delayed(Duration(milliseconds: 500));
@@ -104,7 +104,13 @@ class TcpSocketClient {
           if (e is SocketException) {
             isConnect = false;
           }
-          onError.call(e, emitter);
+          try {
+            await socket.done;
+            await socket.close(); 
+            await connect(onConnection: onConnection, onError: onError);
+          } catch (e) { 
+
+          }
         }
       }
     }

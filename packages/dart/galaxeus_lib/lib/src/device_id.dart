@@ -2,8 +2,7 @@ part of galaxeus_lib;
 
 DeviceId? getDeviceId({bool isGetProductId = false}) {
   if (Platform.isAndroid) {
-    ProcessResult res =
-        Process.runSync("settings", ["get", "secure", "android_id"]);
+    ProcessResult res = Process.runSync("settings", ["get", "secure", "android_id"]);
     return DeviceId(res);
   }
 
@@ -11,11 +10,12 @@ DeviceId? getDeviceId({bool isGetProductId = false}) {
     ProcessResult res = Process.runSync("wmic", ["os", "get", "serialnumber"]);
     return DeviceId(res);
   }
+  
   if (Platform.isLinux) {
     if (isGetProductId) {
       ProcessResult res = Process.runSync("dmidecode", ["-s", "system-uuid"]);
       return DeviceId(res);
-    } else {
+    } else { 
       ProcessResult res = Process.runSync("cat", ["/etc/machine-id"]);
       return DeviceId(res);
     }
@@ -40,11 +40,7 @@ class DeviceId {
 
   String get deviceId {
     if (Platform.isWindows) {
-      return RegExp(r"([a-z0-9]+)-([a-z0-9]+)-([a-z0-9]+)-([a-z0-9]+)",
-                  caseSensitive: false)
-              .stringMatch(
-                  data.stdout.toString().replaceAll(RegExp(r"\n"), "")) ??
-          "";
+      return RegExp(r"([a-z0-9]+)-([a-z0-9]+)-([a-z0-9]+)-([a-z0-9]+)", caseSensitive: false).stringMatch(data.stdout.toString().replaceAll(RegExp(r"\n"), "")) ?? "";
     }
     return data.stdout.toString().replaceAll(RegExp(r"\n"), "");
   }
