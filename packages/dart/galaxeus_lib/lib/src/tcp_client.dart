@@ -74,19 +74,12 @@ class TcpSocketClient {
               isConnect = false;
             },
             onDone: () async {
+              isConnect = false;
               if (onDataConnection != null) {
                 onDataConnection.call({"@type": "connection", "status": "disconnect"});
               } else {
                 emitter.emit(event_socket_connection, null, {"@type": "connection", "status": "disconnect"});
               }
-              isConnect = false;
-              // await socket.done;
-              // await socket.close();
-              // await connect(
-              //   onConnect: onConnect,
-              //   onError: onError,
-              //   onDone: onDone,
-              // );
               Timer.periodic(ping_interval, (timer) async {
                 if (onDataConnection != null) {
                   onDataConnection.call({
