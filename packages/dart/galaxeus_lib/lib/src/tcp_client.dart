@@ -48,8 +48,8 @@ class TcpSocketClient {
   }
 
   Future<void> connect({
-    required dynamic Function(Map data) onConnection,
-    required Function(Map data, EventEmitter emitter) onError,
+    void Function(dynamic data)? onDataUpdate,
+    void Function(Map data)? onDataConnection,
   }) async {
     while (true) {
       await Future.delayed(Duration(milliseconds: 500));
@@ -64,13 +64,21 @@ class TcpSocketClient {
           );
           StreamSubscription<Uint8List> listen = socket.listen(
             (List<int> event) {
-              return emitter.emit(event_socket_update, null, event);
+              if (onDataUpdate != null) {
+                onDataUpdate.call(event);
+              } else {
+                return emitter.emit(event_socket_update, null, event);
+              }
             },
             onError: (a, b) {
               isConnect = false;
             },
             onDone: () async {
-              onConnection.call({"@type": "connection", "status": "disconnect"});
+              if (onDataConnection != null) {
+                onDataConnection.call({"@type": "connection", "status": "disconnect"});
+              } else {
+                emitter.emit(event_socket_connection, null, {"@type": "connection", "status": "disconnect"});
+              }
               isConnect = false;
               // await socket.done;
               // await socket.close();
@@ -80,14 +88,18 @@ class TcpSocketClient {
               //   onDone: onDone,
               // );
               Timer.periodic(ping_interval, (timer) async {
-                onConnection.call({
-                  "@type": "connection",
-                  "status": "reconnect",
-                });
+                if (onDataConnection != null) {
+                  onDataConnection.call({
+                    "@type": "connection",
+                    "status": "reconnect",
+                  });
+                } else {
+                  emitter.emit(event_socket_connection, null, {"@type": "connection", "status": "reconnect"});
+                }
                 try {
                   await connect(
-                    onConnection: onConnection,
-                    onError: onError,
+                    onDataConnection: onDataConnection,
+                    onDataUpdate: onDataUpdate,
                   );
                 } catch (e) {}
                 if (isConnect) {
@@ -98,7 +110,11 @@ class TcpSocketClient {
             cancelOnError: true,
           );
           isConnect = true;
-          onConnection.call({"@type": "connection", "status": "connected"});
+          if (onDataConnection != null) {
+            onDataConnection.call({"@type": "connection", "status": "connected"});
+          } else {
+            emitter.emit(event_socket_connection, null, {"@type": "connection", "status": "connected"});
+          }
           break;
         } catch (e) {
           if (e is SocketException) {
@@ -106,10 +122,34 @@ class TcpSocketClient {
           }
           try {
             await socket.done;
-            await socket.close(); 
-            await connect(onConnection: onConnection, onError: onError);
-          } catch (e) { 
-
+            await socket.close();
+            if (onDataConnection != null) {
+              onDataConnection.call({
+                "@type": "connection",
+                "status": "reconnection",
+              });
+            } else {
+              emitter.emit(event_socket_connection, null, {
+                "@type": "connection",
+                "status": "reconnection",
+              });
+            }
+            await connect(
+              onDataConnection: onDataConnection,
+              onDataUpdate: onDataUpdate,
+            );
+          } catch (e) {
+            if (onDataConnection != null) {
+              onDataConnection.call({
+                "@type": "connection",
+                "status": "reconnection",
+              });
+            } else {
+              emitter.emit(event_socket_connection, null, {
+                "@type": "connection",
+                "status": "reconnection",
+              });
+            }
           }
         }
       }
