@@ -9,7 +9,6 @@ import 'package:universal_io/io.dart';
 export 'package:http/http.dart';
 import 'package:collection/collection.dart';
 
-import "package:tcp_client_dart/tcp_client_dart.dart";
 part 'extension/list.dart';
 part 'extension/map.dart';
 part 'extension/string.dart';
@@ -20,6 +19,7 @@ part 'src/device_id.dart';
 part 'src/event_emitter.dart';
 part 'src/fetch.dart';
 part 'src/json_to_dart.dart';
+part "src/json_to_message.dart";
 part 'src/json_to_update.dart';
 part 'src/production.dart';
 part 'src/tcp_client.dart';
@@ -34,7 +34,8 @@ String getUuid(int length, {String? text}) {
     ch = text;
   }
   Random r = Random();
-  return String.fromCharCodes(Iterable.generate(length, (_) => ch.codeUnitAt(r.nextInt(ch.length))));
+  return String.fromCharCodes(
+      Iterable.generate(length, (_) => ch.codeUnitAt(r.nextInt(ch.length))));
 }
 
 T getRandomElement<T>(List<T> list) {

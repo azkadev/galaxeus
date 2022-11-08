@@ -1,6 +1,6 @@
 name: galaxeus_lib
 description: All in one library for help you make easy app on cross platform and support server side, inclue tcp, fetch, event emitter, websocket, and more.
-version: 0.0.20
+version: 0.0.27
 homepage: https://github.com/azkadev/galaxeus/wiki
 repository: https://github.com/azkadev/galaxeus/tree/main/dart/galaxeus
 issue_tracker: https://github.com/azkadev/galaxeus/issues
@@ -20,7 +20,6 @@ dependencies:
     encrypt: ^5.0.1,
     http: ^0.13.5,
     image: ^3.2.0,
-    tcp_client_dart: ^0.2.0,
     universal_io: ^2.0.4,
     zxing2: ^0.1.1,
   }

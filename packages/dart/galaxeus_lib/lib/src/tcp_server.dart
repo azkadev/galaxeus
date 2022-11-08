@@ -2,13 +2,13 @@
 
 part of galaxeus_lib;
 
-class TcpSocketServer { 
+class TcpSocketServer {
   EventEmitter emitter = EventEmitter();
   late String event_update;
   late ServerSocket server;
   late SecureServerSocket server_secure;
 
-  TcpSocketServer({this.event_update = "tcp_socket_update"}); 
+  TcpSocketServer({this.event_update = "tcp_socket_update"});
   Future<void> listen({
     required String host,
     required int port,
@@ -78,5 +78,5 @@ class TcpSocketServer {
   //     }
   //   }
   // }
- 
-} 
+
+}

@@ -84,9 +84,12 @@ class WebSocketClient {
                   "status": "disconnect",
                 });
               }
-              Timer.periodic(pingInterval ?? Duration(seconds: 2), (timer) async {
+              Timer.periodic(pingInterval ?? Duration(seconds: 2),
+                  (timer) async {
                 try {
-                  await connect(onDataUpdate: onDataUpdate, onDataConnection: onDataConnection);
+                  await connect(
+                      onDataUpdate: onDataUpdate,
+                      onDataConnection: onDataConnection);
                 } catch (e) {}
                 if (isConnect) {
                   timer.cancel();
@@ -127,7 +130,8 @@ class WebSocketClient {
                 "status": "reconnection",
               });
             }
-            await connect(onDataUpdate: onDataUpdate, onDataConnection: onDataConnection);
+            await connect(
+                onDataUpdate: onDataUpdate, onDataConnection: onDataConnection);
           } catch (e) {
             if (onDataConnection != null) {
               onDataConnection.call({
@@ -146,7 +150,8 @@ class WebSocketClient {
     }
   }
 
-  Listener on(String name, Function(dynamic update) callback, {bool isThrowError = false}) {
+  Listener on(String name, Function(dynamic update) callback,
+      {bool isThrowError = false}) {
     return event_emitter.on(name, null, (ev, context) {
       try {
         if (ev.eventData != null) {
@@ -161,7 +166,8 @@ class WebSocketClient {
     });
   }
 
-  void clientSend(Object value, {
+  void clientSend(
+    Object value, {
     bool is_compress = false,
   }) {
     if (is_compress) {
@@ -172,7 +178,10 @@ class WebSocketClient {
     return socket.add(value);
   }
 
-  void clientSendJson(Map value) {
-    return clientSend(json.encode(value));
+  void clientSendJson(
+    Map value, {
+    bool is_compress = false,
+  }) {
+    return clientSend(json.encode(value), is_compress: is_compress);
   }
 }

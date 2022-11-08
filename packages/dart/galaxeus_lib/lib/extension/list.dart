@@ -1,3 +1,5 @@
+// ignore_for_file: non_constant_identifier_names
+
 part of galaxeus_lib;
 
 extension GalaxeusExtensionList on List {

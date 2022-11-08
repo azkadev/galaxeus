@@ -38,7 +38,8 @@ class TcpSocketClient {
       emitter = eventEmitter;
     }
   }
-  Listener on(String typeUpdate, dynamic Function(dynamic update) callback, Object? context) {
+  Listener on(String typeUpdate, dynamic Function(dynamic update) callback,
+      Object? context) {
     return emitter.on(typeUpdate, context, (ev, context) {
       if (ev.eventData != null) {
         callback.call(ev.eventData);
@@ -76,9 +77,11 @@ class TcpSocketClient {
             onDone: () async {
               isConnect = false;
               if (onDataConnection != null) {
-                onDataConnection.call({"@type": "connection", "status": "disconnect"});
+                onDataConnection
+                    .call({"@type": "connection", "status": "disconnect"});
               } else {
-                emitter.emit(event_socket_connection, null, {"@type": "connection", "status": "disconnect"});
+                emitter.emit(event_socket_connection, null,
+                    {"@type": "connection", "status": "disconnect"});
               }
               Timer.periodic(ping_interval, (timer) async {
                 if (onDataConnection != null) {
@@ -87,7 +90,8 @@ class TcpSocketClient {
                     "status": "reconnect",
                   });
                 } else {
-                  emitter.emit(event_socket_connection, null, {"@type": "connection", "status": "reconnect"});
+                  emitter.emit(event_socket_connection, null,
+                      {"@type": "connection", "status": "reconnect"});
                 }
                 try {
                   await connect(
@@ -104,9 +108,11 @@ class TcpSocketClient {
           );
           isConnect = true;
           if (onDataConnection != null) {
-            onDataConnection.call({"@type": "connection", "status": "connected"});
+            onDataConnection
+                .call({"@type": "connection", "status": "connected"});
           } else {
-            emitter.emit(event_socket_connection, null, {"@type": "connection", "status": "connected"});
+            emitter.emit(event_socket_connection, null,
+                {"@type": "connection", "status": "connected"});
           }
           break;
         } catch (e) {

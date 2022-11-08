@@ -1,4 +1,4 @@
-// ignore_for_file: unused_local_variable, unnecessary_brace_in_string_interps
+// ignore_for_file: unused_local_variable, unnecessary_brace_in_string_interps, non_constant_identifier_names
 
 import 'dart:io';
 
